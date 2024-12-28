@@ -1,80 +1,78 @@
 package application;
 
-import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
-import javafx.scene.layout.VBox;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
+import okhttp3.*;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import java.io.IOException;
 
-public class AdderApp extends Application {
+public class AdderApp {
+    public void show() {
+        Stage stage = new Stage();
+        stage.setTitle("Adder App");
 
-    @Override
-    public void start(Stage stage) {
-        // Create UI components
+        // Layout
+        GridPane grid = new GridPane();
+        grid.setPadding(new Insets(10));
+        grid.setHgap(10);
+        grid.setVgap(10);
+
+        // Input fields
         TextField num1Field = new TextField();
-        num1Field.setPromptText("Enter first number");
-
         TextField num2Field = new TextField();
-        num2Field.setPromptText("Enter second number");
-
-        Button addButton = new Button("Add");
         Label resultLabel = new Label();
 
-        // Add button click handler
-        addButton.setOnAction(event -> {
+        // Buttons
+        Button addButton = new Button("Add");
+        addButton.setOnAction(e -> {
             try {
-                double num1 = Double.parseDouble(num1Field.getText());
-                double num2 = Double.parseDouble(num2Field.getText());
-
-                // Call the FastAPI server and get the result
-                String result = callAdderAPI(num1, num2);
+                int num1 = Integer.parseInt(num1Field.getText());
+                int num2 = Integer.parseInt(num2Field.getText());
+                int result = callAdderApi(num1, num2); // Call FastAPI backend
                 resultLabel.setText("Result: " + result);
-            } catch (NumberFormatException e) {
+            } catch (NumberFormatException ex) {
                 resultLabel.setText("Please enter valid numbers.");
-            } catch (Exception e) {
-                resultLabel.setText("Error: " + e.getMessage());
             }
         });
 
-        // Layout
-        VBox layout = new VBox(10, num1Field, num2Field, addButton, resultLabel);
-        layout.setPadding(new Insets(15));
+        // Add nodes to grid
+        grid.add(new Label("Number 1:"), 0, 0);
+        grid.add(num1Field, 1, 0);
+        grid.add(new Label("Number 2:"), 0, 1);
+        grid.add(num2Field, 1, 1);
+        grid.add(addButton, 1, 2);
+        grid.add(resultLabel, 1, 3);
 
-        // Scene and Stage
-        Scene scene = new Scene(layout, 300, 200);
-        stage.setTitle("Adder Application");
-        stage.setScene(scene);
+        // Show the scene
+        stage.setScene(new Scene(grid, 300, 200));
         stage.show();
     }
 
-    // Method to call the FastAPI server
-    private String callAdderAPI(double num1, double num2) throws Exception {
-        HttpClient client = HttpClient.newHttpClient();
+    private int callAdderApi(int num1, int num2) {
+        OkHttpClient client = new OkHttpClient();
+        String url = "http://127.0.0.1:8000/add";
+        String jsonBody = String.format("{\"num1\": %d, \"num2\": %d}", num1, num2);
 
-        // Create JSON payload
-        String jsonPayload = String.format("{\"num1\": %f, \"num2\": %f}", num1, num2);
-
-        // Build HTTP request
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(new URI("http://127.0.0.1:8000/add"))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(jsonPayload))
+        RequestBody body = RequestBody.create(
+                jsonBody, MediaType.parse("application/json; charset=utf-8"));
+        Request request = new Request.Builder()
+                .url(url)
+                .post(body)
                 .build();
 
-        // Send request and get response
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-        // Extract result from the response
-        return response.body();
-    }
-
-    public static void main(String[] args) {
-        launch(args);
+        try (Response response = client.newCall(request).execute()) {
+            if (response.isSuccessful() && response.body() != null) {
+                String responseBody = response.body().string();
+                return Integer.parseInt(responseBody);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return 0;
     }
 }
