@@ -1,26 +1,29 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
+import json
+import time
 
-# Create FastAPI instance
-app = FastAPI()
+# Path to the shared JSON file
+data_file = "../Shared/data.json"
 
-# Request model for the adder
-class Numbers(BaseModel):
-    num1: float
-    num2: float
+while True:
+    try:
+        # Read the data from the JSON file
+        with open(data_file, "r") as file:
+            data = json.load(file)
 
-# Root endpoint for basic testing
-@app.get("/")
-def read_root():
-    return {"message": "Adder Application is running!"}
+        # Check if there is a request for addition
+        if data.get("operation") == "add":
+            num1 = data.get("num1", 0)
+            num2 = data.get("num2", 0)
+            result = num1 + num2
 
-# Endpoint to perform addition
-@app.post("/add")
-def add_numbers(numbers: Numbers):
-    result = numbers.num1 + numbers.num2
-    return {"num1": numbers.num1, "num2": numbers.num2, "result": result}
+            # Write the result back to the JSON file
+            data["result"] = result
+            data["operation"] = "done"  # Mark the operation as done
 
-# Run the app (if needed for standalone testing)
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+            with open(data_file, "w") as file:
+                json.dump(data, file)
+    except Exception as e:
+        print(f"Error: {e}")
+
+    # Sleep briefly to prevent excessive file access
+    time.sleep(0.1)

@@ -1,78 +1,107 @@
 package application;
 
-import javafx.geometry.Insets;
+import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.GridPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-import okhttp3.*;
+import org.json.JSONObject;
 
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 
-public class AdderApp {
-    public void show() {
-        Stage stage = new Stage();
-        stage.setTitle("Adder App");
+public class AdderApp extends Application {
 
-        // Layout
-        GridPane grid = new GridPane();
-        grid.setPadding(new Insets(10));
-        grid.setHgap(10);
-        grid.setVgap(10);
+    private static final String JSON_PATH = "../Shared/data.json";
+    private static final String PYTHON_SCRIPT = "../Python Parts/adder.py";
+
+    @Override
+    public void start(Stage primaryStage) {
+        primaryStage.setTitle("Adder App");
+
+        VBox layout = new VBox(10);
 
         // Input fields
         TextField num1Field = new TextField();
-        TextField num2Field = new TextField();
-        Label resultLabel = new Label();
+        num1Field.setPromptText("Enter first number");
 
-        // Buttons
-        Button addButton = new Button("Add");
-        addButton.setOnAction(e -> {
+        TextField num2Field = new TextField();
+        num2Field.setPromptText("Enter second number");
+
+        // Label to display the result
+        Label resultLabel = new Label("Result: ");
+
+        // Button to run the operation
+        Button runButton = new Button("Run Adder");
+        runButton.setOnAction(e -> {
             try {
+                // Get user input
                 int num1 = Integer.parseInt(num1Field.getText());
                 int num2 = Integer.parseInt(num2Field.getText());
-                int result = callAdderApi(num1, num2); // Call FastAPI backend
-                resultLabel.setText("Result: " + result);
+
+                // Write to JSON file
+                JSONObject data = new JSONObject();
+                data.put("operation", "add");
+                data.put("num1", num1);
+                data.put("num2", num2);
+                writeJsonToFile(data, JSON_PATH);
+
+                // Run the Python program
+                runPythonScript();
+                
+                try
+                {
+                    Thread.sleep(11); // Sleep for one second
+                }
+                catch (InterruptedException ex)
+                {
+                    Thread.currentThread().interrupt();
+                }
+                
+                // Read the result from JSON file
+                JSONObject resultData = readJsonFromFile(JSON_PATH);
+                if ("done".equals(resultData.getString("operation"))) {
+                    resultLabel.setText("Result: " + resultData.getInt("result"));
+                }
             } catch (NumberFormatException ex) {
                 resultLabel.setText("Please enter valid numbers.");
+            } catch (Exception ex) {
+                resultLabel.setText("An error occurred: " + ex.getMessage());
             }
         });
 
-        // Add nodes to grid
-        grid.add(new Label("Number 1:"), 0, 0);
-        grid.add(num1Field, 1, 0);
-        grid.add(new Label("Number 2:"), 0, 1);
-        grid.add(num2Field, 1, 1);
-        grid.add(addButton, 1, 2);
-        grid.add(resultLabel, 1, 3);
+        // Add components to the layout
+        layout.getChildren().addAll(num1Field, num2Field, runButton, resultLabel);
 
-        // Show the scene
-        stage.setScene(new Scene(grid, 300, 200));
-        stage.show();
+        // Set the scene and show the stage
+        Scene scene = new Scene(layout, 300, 200);
+        primaryStage.setScene(scene);
+        primaryStage.show();
     }
 
-    private int callAdderApi(int num1, int num2) {
-        OkHttpClient client = new OkHttpClient();
-        String url = "http://127.0.0.1:8000/add";
-        String jsonBody = String.format("{\"num1\": %d, \"num2\": %d}", num1, num2);
+    private void runPythonScript() throws IOException {
+        ProcessBuilder processBuilder = new ProcessBuilder("python", PYTHON_SCRIPT);
+        processBuilder.start();
+    }
 
-        RequestBody body = RequestBody.create(
-                jsonBody, MediaType.parse("application/json; charset=utf-8"));
-        Request request = new Request.Builder()
-                .url(url)
-                .post(body)
-                .build();
-
-        try (Response response = client.newCall(request).execute()) {
-            if (response.isSuccessful() && response.body() != null) {
-                String responseBody = response.body().string();
-                return Integer.parseInt(responseBody);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+    private void writeJsonToFile(JSONObject jsonObject, String filePath) throws IOException {
+        try (FileWriter file = new FileWriter(filePath)) {
+            file.write(jsonObject.toString());
         }
-        return 0;
+    }
+
+    private JSONObject readJsonFromFile(String filePath) throws IOException {
+        try (FileReader reader = new FileReader(new File(filePath))) {
+            StringBuilder jsonText = new StringBuilder();
+            int i;
+            while ((i = reader.read()) != -1) {
+                jsonText.append((char) i);
+            }
+            return new JSONObject(jsonText.toString());
+        }
     }
 }

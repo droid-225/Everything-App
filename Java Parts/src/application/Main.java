@@ -32,8 +32,9 @@ public class Main extends Application {
     }
 
     private void openAdderApp() {
+    	// Launch Adder App
         AdderApp adderApp = new AdderApp();
-        adderApp.show();
+        adderApp.start(new Stage());
     }
 
     public static void main(String[] args) {

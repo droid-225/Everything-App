@@ -8,6 +8,7 @@
 	</classpathentry>
 	<classpathentry kind="con" path="org.eclipse.fx.ide.jdt.core.JAVAFX_CONTAINER"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/JavaFX"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/JSON"/>
 	<classpathentry kind="lib" path="C:/Users/aryan/Desktop/Everything App/External Libs/kotlin-stdlib-1.9.0.jar"/>
 	<classpathentry kind="lib" path="C:/Users/aryan/Desktop/Everything App/External Libs/okio-3.4.0.jar"/>
 	<classpathentry kind="lib" path="C:/Users/aryan/Desktop/Everything App/External Libs/okhttp-4.11.0.jar"/>
