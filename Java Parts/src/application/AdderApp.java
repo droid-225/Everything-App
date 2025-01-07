@@ -16,8 +16,9 @@ import java.io.IOException;
 
 public class AdderApp extends Application {
 
-    private static final String JSON_PATH = "../Shared/data.json";
-    private static final String PYTHON_SCRIPT = "../Python Parts/adder.py";
+    private static final String JSON_PATH = "C:/Users/aryan/Desktop/Everything App/Shared/data.json";
+    private static final String PYTHON_SCRIPT = "C:/Users/aryan/Desktop/Everything App/Python Parts/Adder/Main.py";
+    private Process pythonProcess;
 
     @Override
     public void start(Stage primaryStage) {
@@ -50,25 +51,21 @@ public class AdderApp extends Application {
                 data.put("num2", num2);
                 writeJsonToFile(data, JSON_PATH);
 
-                // Run the Python program
-                runPythonScript();
-                
-                try
-                {
-                    Thread.sleep(11); // Sleep for one second
+                // Run the Python program if not already running
+                if (pythonProcess == null || !pythonProcess.isAlive()) {
+                    runPythonScript();
                 }
-                catch (InterruptedException ex)
-                {
-                    Thread.currentThread().interrupt();
-                }
-                
-                // Read the result from JSON file
+
+                // Wait briefly for the Python script to process the request
+                Thread.sleep(1000);
+
+                // Read the result from the JSON file
                 JSONObject resultData = readJsonFromFile(JSON_PATH);
                 if ("done".equals(resultData.getString("operation"))) {
                     resultLabel.setText("Result: " + resultData.getInt("result"));
                 }
             } catch (NumberFormatException ex) {
-                resultLabel.setText("Please enter valid numbers.");
+                resultLabel.setText("Please enter valid whole numbers.");
             } catch (Exception ex) {
                 resultLabel.setText("An error occurred: " + ex.getMessage());
             }
@@ -80,12 +77,30 @@ public class AdderApp extends Application {
         // Set the scene and show the stage
         Scene scene = new Scene(layout, 300, 200);
         primaryStage.setScene(scene);
+
+        // Add a listener for window close
+        primaryStage.setOnCloseRequest(event -> {
+            try {
+                // Signal Python process to shut down
+                JSONObject data = new JSONObject();
+                data.put("operation", "shutdown");
+                writeJsonToFile(data, JSON_PATH);
+
+                // Terminate the Python process if it's running
+                if (pythonProcess != null && pythonProcess.isAlive()) {
+                    pythonProcess.destroy();
+                }
+            } catch (IOException ex) {
+                System.out.println("Error during shutdown: " + ex.getMessage());
+            }
+        });
+
         primaryStage.show();
     }
 
     private void runPythonScript() throws IOException {
         ProcessBuilder processBuilder = new ProcessBuilder("python", PYTHON_SCRIPT);
-        processBuilder.start();
+        pythonProcess = processBuilder.start();
     }
 
     private void writeJsonToFile(JSONObject jsonObject, String filePath) throws IOException {
