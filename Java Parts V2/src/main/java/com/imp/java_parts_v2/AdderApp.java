@@ -1,4 +1,4 @@
-package application;
+package com.imp.java_parts_v2;
 
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -7,9 +7,9 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -27,6 +27,7 @@ public class AdderApp extends Application {
         VBox layout = new VBox(10);
 
         // Input fields
+        Label num1Label = new Label("Enter first number:");
         TextField num1Field = new TextField();
         num1Field.setPromptText("Enter first number");
 
@@ -49,7 +50,7 @@ public class AdderApp extends Application {
                 data.put("operation", "add");
                 data.put("num1", num1);
                 data.put("num2", num2);
-                writeJsonToFile(data, JSON_PATH);
+                writeJsonToFile(data);
 
                 // Run the Python program if not already running
                 if (pythonProcess == null || !pythonProcess.isAlive()) {
@@ -60,7 +61,7 @@ public class AdderApp extends Application {
                 Thread.sleep(1000);
 
                 // Read the result from the JSON file
-                JSONObject resultData = readJsonFromFile(JSON_PATH);
+                JSONObject resultData = readJsonFromFile();
                 if ("done".equals(resultData.getString("operation"))) {
                     resultLabel.setText("Result: " + resultData.getInt("result"));
                 }
@@ -72,7 +73,7 @@ public class AdderApp extends Application {
         });
 
         // Add components to the layout
-        layout.getChildren().addAll(num1Field, num2Field, runButton, resultLabel);
+        layout.getChildren().addAll(num1Label, num1Field, num2Field, runButton, resultLabel);
 
         // Set the scene and show the stage
         Scene scene = new Scene(layout, 300, 200);
@@ -84,13 +85,13 @@ public class AdderApp extends Application {
                 // Signal Python process to shut down
                 JSONObject data = new JSONObject();
                 data.put("operation", "shutdown");
-                writeJsonToFile(data, JSON_PATH);
+                writeJsonToFile(data);
 
                 // Terminate the Python process if it's running
                 if (pythonProcess != null && pythonProcess.isAlive()) {
                     pythonProcess.destroy();
                 }
-            } catch (IOException ex) {
+            } catch (IOException | JSONException ex) {
                 System.out.println("Error during shutdown: " + ex.getMessage());
             }
         });
@@ -103,14 +104,14 @@ public class AdderApp extends Application {
         pythonProcess = processBuilder.start();
     }
 
-    private void writeJsonToFile(JSONObject jsonObject, String filePath) throws IOException {
-        try (FileWriter file = new FileWriter(filePath)) {
+    private void writeJsonToFile(JSONObject jsonObject) throws IOException {
+        try (FileWriter file = new FileWriter(AdderApp.JSON_PATH)) {
             file.write(jsonObject.toString());
         }
     }
 
-    private JSONObject readJsonFromFile(String filePath) throws IOException {
-        try (FileReader reader = new FileReader(new File(filePath))) {
+    private JSONObject readJsonFromFile() throws IOException, JSONException {
+        try (FileReader reader = new FileReader(AdderApp.JSON_PATH)) {
             StringBuilder jsonText = new StringBuilder();
             int i;
             while ((i = reader.read()) != -1) {
@@ -120,3 +121,4 @@ public class AdderApp extends Application {
         }
     }
 }
+

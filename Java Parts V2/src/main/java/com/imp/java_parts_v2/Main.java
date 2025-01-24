@@ -1,4 +1,4 @@
-package application;
+package com.imp.java_parts_v2;
 
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -32,7 +32,7 @@ public class Main extends Application {
     }
 
     private void openAdderApp() {
-    	// Launch Adder App
+        // Launch Adder App
         AdderApp adderApp = new AdderApp();
         adderApp.start(new Stage());
     }
